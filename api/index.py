@@ -4,14 +4,17 @@ from youtube_transcript_api import YouTubeTranscriptApi
 app = FastAPI()
 
 @app.get("/transcript/{video_id}")
-def grab(video_id: str, lang: str = "ru,en"):
+def get_transcript(video_id: str, lang: str = "ru,en"):
     prefs = lang.split(",")
-    tr_list = YouTubeTranscriptApi.list_transcripts(video_id)
+    tr = YouTubeTranscriptApi.list_transcripts(video_id)
     for code in prefs:
-        for mode in ("find_manually_created_transcript", "find_generated_transcript"):
+        try:
+            t = tr.find_manually_created_transcript([code])
+            return {"language": code, "segments": t.fetch()}
+        except:
             try:
-                t = getattr(tr_list, mode)([code])
+                t = tr.find_generated_transcript([code])
                 return {"language": code, "segments": t.fetch()}
             except:
-                pass
+                continue
     return {"error": "no transcript"}
